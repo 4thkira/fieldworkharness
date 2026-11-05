@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="A local Fieldwork room for agent conversation, memory inspection, receipts, and appearance settings.">
+  <title>Fieldwork</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/madoromi-palettes.css">
+</head>
+<body>
+  <a class="skip-link" href="#conversation-title">Skip to conversation</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#conversation-title">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 36" focusable="false">
+            <path d="M16 31V12.5" />
+            <path d="M15.7 22C10.3 21.8 7.2 17.9 7 12c5.5.2 8.6 4.1 8.7 10Z" />
+            <path d="M16.3 18.5c5.1-.2 8.1-3.8 8.4-9.4-5.3.2-8.3 3.8-8.4 9.4Z" />
+            <path d="M5 31.5h22" />
+            <circle class="brand-mark-seed" cx="16" cy="6" r="2" />
+          </svg>
+        </span>
+        <span>
+          <strong>Fieldwork</strong>
+          <small>local agent habitat</small>
+        </span>
+      </a>
+      <div class="topbar-moods" aria-label="Moods">
+        <button class="mood-chip" id="mood-chip" type="button" hidden title="Your agent's mood"></button>
+        <button class="mood-chip" id="my-mood-chip" type="button" hidden title="Set your mood"></button>
+        <span class="rest-chip" id="rest-chip" hidden>🌙 resting</span>
+      </div>
+      <div class="topbar-state">
+        <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+        <span id="status-label">Connecting</span>
+        <button class="icon-button tour-button" id="tour-button" type="button" aria-label="Show me around" title="Show me around">?</button>
+        <button class="icon-button" id="settings-button" type="button" aria-label="Open settings" title="Settings">⚙</button>
+        <button class="icon-button" id="stop-button" type="button" aria-label="Stop Fieldwork" title="Stop Fieldwork" hidden>⏻</button>
+        <button class="icon-button" id="restart-button" type="button" aria-label="Restart Fieldwork" title="Restart Fieldwork" hidden>↻</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <nav class="sidebar" aria-label="Conversations and Fieldworks">
+        <div class="mode-switch" id="mode-switch" role="tablist" aria-label="Room mode" hidden>
+          <button id="mode-talk" type="button" role="tab" aria-selected="true">Talk</button>
+          <button id="mode-fieldwork" type="button" role="tab" aria-selected="false">Fieldwork</button>
+        </div>
+        <div class="sidebar-head">
+          <label class="sr-only" for="conversation-search">Find a conversation</label>
+          <input id="conversation-search" type="search" placeholder="Find a conversation…" autocomplete="off">
+          <button class="new-button" id="new-conversation" type="button">+ New</button>
+        </div>
+        <div class="conversation-list" id="conversation-list"></div>
+        <details class="archived-conversations" id="archived-conversations" hidden>
+          <summary>Archived · <span id="archived-conversation-count">0</span></summary>
+          <div class="archived-conversation-list" id="archived-conversation-list"></div>
+        </details>
+        <div class="conversation-list" id="fieldwork-list" hidden></div>
+      </nav>
+
+      <section class="fieldwork-panel" id="fieldwork-panel" aria-labelledby="fieldwork-title" hidden>
+        <div class="section-heading conversation-heading">
+          <div>
+            <p class="eyebrow">Fieldwork</p>
+            <h1 id="fieldwork-title">A new Fieldwork</h1>
+          </div>
+          <div class="run-chip" id="fieldwork-chip">New</div>
+        </div>
+
+        <p class="fieldwork-guide" id="fieldwork-guide">Give your agent a question or task and a step budget. Work continues without waiting for replies, leaves a write-up and visible steps, and can be stopped while running.</p>
+
+        <form class="fieldwork-form" id="fieldwork-form">
+          <label for="fieldwork-prompt">What should your agent look into or do?</label>
+          <textarea id="fieldwork-prompt" rows="6" maxlength="8000" placeholder="For example: read the files in your notebook and write a short summary of what you have been working on." required></textarea>
+          <div class="fieldwork-form-row">
+            <label for="fieldwork-steps"><span id="fieldwork-steps-copy">Steps the agent may take</span> <input id="fieldwork-steps" type="number" min="1" max="32" value="12"></label>
+            <button class="send-button" type="submit"><span>Begin</span><span aria-hidden="true">→</span></button>
+          </div>
+          <p class="fieldwork-error" id="fieldwork-error" role="alert" hidden></p>
+        </form>
+
+        <article class="fieldwork-detail" id="fieldwork-detail" hidden>
+          <p class="fieldwork-question" id="fieldwork-question"></p>
+          <p class="fieldwork-meta" id="fieldwork-meta"></p>
+          <div class="fieldwork-answer" id="fieldwork-answer"></div>
+          <details class="fieldwork-steps" id="fieldwork-steps-box">
+            <summary>How the agent got there</summary>
+            <ol id="fieldwork-step-list"></ol>
+          </details>
+          <div class="fieldwork-actions">
+            <button class="secondary-button" id="fieldwork-stop" type="button">Stop</button>
+            <button class="secondary-button" id="fieldwork-again" type="button">Run again</button>
+            <button class="send-button" id="fieldwork-bring" type="button"><span>Talk about it</span><span aria-hidden="true">→</span></button>
+          </div>
+        </article>
+      </section>
+
+      <section class="conversation-panel" aria-labelledby="conversation-title">
+        <aside class="room-backdrop" id="room-backdrop" hidden aria-hidden="true"><img id="room-backdrop-image" alt=""></aside>
+        <aside class="room-marginalia" id="room-marginalia" hidden aria-hidden="true"><img id="room-marginalia-image" alt=""></aside>
+        <div class="section-heading conversation-heading">
+          <div>
+            <p class="eyebrow">Conversation</p>
+            <div class="conversation-title-row">
+              <h1 id="conversation-title" tabindex="-1"><span id="conversation-title-text">A clean local room</span></h1>
+              <button class="conversation-title-edit" id="conversation-title-edit" type="button" aria-label="Rename conversation" title="Rename conversation">✎</button>
+              <details class="conversation-actions" id="conversation-actions">
+                <summary aria-label="Conversation actions" title="Conversation actions">⋯</summary>
+                <div class="conversation-actions-menu">
+                  <button id="conversation-proactive-action" type="button" aria-label="Stop automatic check-ins for this conversation">Stop automatic check-ins here</button>
+                  <button id="conversation-archive-action" type="button">Archive</button>
+                </div>
+              </details>
+            </div>
+            <form class="conversation-title-form" id="conversation-title-form" hidden>
+              <label class="sr-only" for="conversation-title-input">Conversation title</label>
+              <input id="conversation-title-input" name="title" type="text" autocomplete="off" aria-describedby="conversation-title-status" required>
+              <button class="conversation-title-save" type="submit">Save</button>
+              <button class="conversation-title-cancel" id="conversation-title-cancel" type="button">Cancel</button>
+            </form>
+            <p class="conversation-title-status" id="conversation-title-status" role="status" hidden></p>
+          </div>
+          <div class="heading-chips">
+            <button class="model-chip" id="model-chip" type="button" hidden title="Change model"></button>
+            <div class="run-chip" id="run-chip">Idle</div>
+          </div>
+        </div>
+
+        <div class="notice" id="conversation-notice" role="status" hidden></div>
+        <div class="sr-only" id="conversation-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+
+        <ol class="messages" id="messages" aria-live="polite" aria-label="Conversation messages">
+          <li class="empty-state" id="conversation-empty">
+            <span class="empty-orbit" aria-hidden="true"></span>
+            <strong>The room is ready.</strong>
+            <span>Write a message to begin.</span>
+            <span class="empty-roots" id="empty-roots-notice" hidden></span>
+          </li>
+        </ol>
+
+        <form class="composer" id="composer">
+          <label class="sr-only" for="message-input">Message</label>
+          <div class="attachment-tray" id="attachment-tray" hidden></div>
+          <textarea id="message-input" name="message" rows="1" maxlength="16000" placeholder="Write to the agent…  (Shift+Enter for a new line)"></textarea>
+          <div class="composer-footer">
+            <button class="attach-button" id="attach-button" type="button" aria-label="Attach pictures or files" title="Attach pictures or text files (or drop them here, or paste a picture)" hidden>📎 Attach</button>
+            <input id="attach-input" type="file" multiple hidden>
+            <button class="send-button" id="send-button" type="submit">
+              <span>Send</span><span aria-hidden="true">↑</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="inspector" aria-label="Fieldwork inspector">
+        <div class="inspector-tabs" role="tablist" aria-label="Inspector panels">
+          <button id="tab-health" type="button" role="tab" aria-selected="true" aria-controls="panel-health">Health</button>
+          <button id="tab-memory" type="button" role="tab" aria-selected="false" aria-controls="panel-memory" tabindex="-1">Memory</button>
+          <button id="tab-shelf" type="button" role="tab" aria-selected="false" aria-controls="panel-shelf" tabindex="-1" hidden>Shelf</button>
+          <button id="tab-receipts" type="button" role="tab" aria-selected="false" aria-controls="panel-receipts" tabindex="-1">Receipts</button>
+        </div>
+
+        <section class="inspector-panel" id="panel-health" role="tabpanel" aria-labelledby="tab-health">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Profile</p>
+              <h2>Health</h2>
+            </div>
+          </div>
+          <dl class="metric-grid" id="profile-metrics"></dl>
+
+          <div class="subsection-heading">
+            <h3>Roots</h3><span class="count-badge" id="root-count">0</span>
+          </div>
+          <p class="roots-notice" id="roots-notice" hidden></p>
+          <ul class="instrument-list" id="root-list"></ul>
+
+          <div class="subsection-heading">
+            <h3>Capabilities</h3>
+          </div>
+          <div class="capability-grid">
+            <section class="capability-card">
+              <span class="capability-icon" aria-hidden="true">⌁</span>
+              <div><strong>Provider</strong><small id="provider-label">Not connected</small></div>
+            </section>
+            <section class="capability-card">
+              <span class="capability-icon" aria-hidden="true">⌘</span>
+              <div><strong>Tools</strong><small id="tool-label">0 available</small></div>
+            </section>
+            <section class="capability-card">
+              <span class="capability-icon" aria-hidden="true">◇</span>
+              <div><strong>Packs</strong><small id="pack-label">0 selected</small></div>
+            </section>
+            <section class="capability-card">
+              <span class="capability-icon" aria-hidden="true">◎</span>
+              <div><strong>Archive</strong><small id="archive-label">Not connected</small></div>
+            </section>
+          </div>
+
+          <details class="tool-drawer" id="tool-drawer">
+            <summary class="subsection-heading">
+              <h3>Declared tools</h3><span class="count-badge" id="tool-count">0</span>
+            </summary>
+            <input class="tool-search" id="tool-search" type="search" placeholder="Find a tool…" aria-label="Find a tool" autocomplete="off">
+            <ul class="instrument-list tool-list" id="tool-list"></ul>
+          </details>
+
+          <div class="subsection-heading">
+            <h3>Selected packs</h3><span class="count-badge" id="pack-count">0</span>
+          </div>
+          <ul class="instrument-list" id="pack-list"></ul>
+        </section>
+
+        <section class="inspector-panel" id="panel-memory" role="tabpanel" aria-labelledby="tab-memory" hidden>
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Retrieval</p>
+              <h2>Memory ledger</h2>
+            </div>
+          </div>
+          <div class="memory-switch" id="memory-switch" role="group" aria-label="What to show" hidden>
+            <button type="button" data-memory-view="memories" aria-pressed="true">Memories</button>
+            <button type="button" data-memory-view="collections" aria-pressed="false">Collections</button>
+          </div>
+          <div class="memory-subview" id="memory-view-memories">
+            <form class="search-form" id="memory-search-form">
+              <label for="memory-query">Find memory</label>
+              <div class="search-row">
+                <input id="memory-query" name="query" type="search" maxlength="512" placeholder="Search for words, or leave empty for the newest">
+                <button type="submit" aria-label="Search memory">→</button>
+              </div>
+              <fieldset class="segmented-control">
+                <legend class="sr-only">Memory search mode</legend>
+                <label><input type="radio" name="mode" value="current" checked><span>Current</span></label>
+                <label><input type="radio" name="mode" value="due"><span>Due</span></label>
+                <label><input type="radio" name="mode" value="history"><span>History</span></label>
+              </fieldset>
+            </form>
+            <div class="search-summary" id="memory-summary">No search yet.</div>
+            <ol class="memory-results" id="memory-results"></ol>
+          </div>
+          <div class="memory-subview" id="memory-view-collections" hidden>
+            <div class="collection-chips" id="collection-chips" role="group" aria-label="Which collection"></div>
+            <div class="collection-controls">
+              <div class="collection-mode" role="group" aria-label="Collection records">
+                <button type="button" data-collection-mode="current" aria-pressed="true">Current</button>
+                <button type="button" data-collection-mode="removed" aria-pressed="false">Removed</button>
+              </div>
+              <input class="tool-search" id="collection-search" type="search" placeholder="Search entries, or leave empty for the newest" aria-label="Search collections" autocomplete="off">
+            </div>
+            <p class="settings-note" id="collection-status" role="status"></p>
+            <div class="collection-results" id="collection-results"></div>
+          </div>
+        </section>
+
+        <section class="inspector-panel" id="panel-shelf" role="tabpanel" aria-labelledby="tab-shelf" hidden>
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Shelf</p>
+              <h2>Kept on purpose</h2>
+            </div>
+          </div>
+          <div class="shelf-tools">
+            <label class="secondary-button shelf-add">+ Add<input id="shelf-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.txt,.md,.csv,.json,text/*" hidden></label>
+            <label class="shelf-show-down"><input type="checkbox" id="shelf-show-down"> Show taken down</label>
+          </div>
+          <p class="settings-note" id="shelf-status" role="status"></p>
+          <div class="shelf-grid" id="shelf-grid"></div>
+        </section>
+
+        <section class="inspector-panel" id="panel-receipts" role="tabpanel" aria-labelledby="tab-receipts" hidden>
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Trace</p>
+              <h2>Visible remainder</h2>
+            </div>
+          </div>
+          <div class="receipt-list" id="receipt-list"></div>
+        </section>
+
+        <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+          <div class="settings-dialog-head">
+            <div><p class="eyebrow">Control room</p><h2 id="settings-title">Fieldwork settings</h2></div>
+            <button class="icon-button" id="settings-close" type="button" aria-label="Close settings">✕</button>
+          </div>
+          <div class="settings-dialog-shell">
+            <aside class="settings-sidebar">
+              <label class="settings-search" for="settings-search"><span>Find a setting</span><input id="settings-search" type="search" autocomplete="off" placeholder="Try API key, icon, reset…"></label>
+              <p class="settings-search-status" id="settings-search-status" aria-live="polite"></p>
+              <nav class="settings-categories" aria-label="Settings categories" role="tablist">
+                <button id="settings-tab-connection" type="button" role="tab" aria-controls="settings-connection" data-settings-page="connection" data-settings-keywords="service provider endpoint api key model subscription ollama openrouter openai reasoning effort think low medium high xhigh max ultra" aria-selected="true" tabindex="0">Connection</button>
+                <button id="settings-tab-bridges" type="button" role="tab" aria-controls="settings-bridges" data-settings-page="bridges" data-settings-keywords="telegram discord bridge bot token chat message direct group guild server channel listener route gateway" aria-selected="false" tabindex="-1" hidden>Bridges</button>
+                <button id="settings-tab-agents" type="button" role="tab" aria-controls="settings-agents" data-settings-page="agents" data-settings-keywords="create switch rename move directory folder home multiple export import portable copy transfer bundle expert help tutorial" aria-selected="false" tabindex="-1">Agents</button>
+                <button id="settings-tab-identity" type="button" role="tab" aria-controls="settings-identity" data-settings-page="identity" data-settings-keywords="name icon avatar portrait picture user person pronouns she her he him they them" aria-selected="false" tabindex="-1">Names, icons &amp; pronouns</button>
+                <button id="settings-tab-guides" type="button" role="tab" aria-controls="settings-guides" data-settings-page="guides" data-settings-keywords="rewrite voice guide tool text telegram discord social media remember recall memory notebook web fieldwork check in" aria-selected="false" tabindex="-1" hidden>Guides</button>
+                <button id="settings-tab-expression" type="button" role="tab" aria-controls="settings-expression" data-settings-page="expression" data-settings-keywords="mood feeling emoji reaction description thinking animation" aria-selected="false" tabindex="-1" hidden>Moods &amp; emoji</button>
+                <button id="settings-tab-checkins" type="button" role="tab" aria-controls="settings-checkins" data-settings-page="checkins" data-settings-keywords="check in away schedule quiet hours postcard fieldwork autonomous" aria-selected="false" tabindex="-1" hidden>Check-ins</button>
+                <button id="settings-tab-heartbeats" type="button" role="tab" aria-controls="settings-heartbeats" data-settings-page="heartbeats" data-settings-keywords="heartbeat task monitor watch schedule cadence claim no change completion history receipt" aria-selected="false" tabindex="-1" hidden>Task heartbeats</button>
+                <button id="settings-tab-goals" type="button" role="tab" aria-controls="settings-goals" data-settings-page="goals" data-settings-keywords="goal promise commitment beneficiary success measure statistics source edge review abandon retire history" aria-selected="false" tabindex="-1" hidden>Goals &amp; promises</button>
+                <button id="settings-tab-outside-reader" type="button" role="tab" aria-controls="settings-outside-reader" data-settings-page="outside-reader" data-settings-keywords="outside reader review audit contradiction broken promise evidence findings no findings source schedule clean context" aria-selected="false" tabindex="-1" hidden>Outside reader</button>
+                <button id="settings-tab-notes" type="button" role="tab" aria-controls="settings-notes" data-settings-page="notes" data-settings-keywords="notes from agent broken bug report feedback wish confusing builder inbox" aria-selected="false" tabindex="-1" hidden>From your agent</button>
+                <button id="settings-tab-tools" type="button" role="tab" aria-controls="settings-tools" data-settings-page="tools" data-settings-keywords="tools groups resident on demand load unload contextual off enable disable prompt tokens memory notebook web shelf collections clock permission ask allow once always never approval recovery interrupted uncertain effect review" aria-selected="false" tabindex="-1" hidden>Tools</button>
+                <button id="settings-tab-changes" type="button" role="tab" aria-controls="settings-changes" data-settings-page="changes" data-settings-keywords="state changes history undo who changed what inspect log export audit revert ownership appearance memory" aria-selected="false" tabindex="-1" hidden>State &amp; history</button>
+                <button id="settings-tab-appearance" type="button" role="tab" aria-controls="settings-appearance" data-settings-page="appearance" data-settings-keywords="palette color theme density spacing text size font typeface preview display interface tabs buttons labels technical code receipts metadata Cozette Comic Neue Lexend Shantell Atkinson serif sans mono accessible legible message width flow one column alternating portrait avatar navigator sidebar inspector panel order arrange move hide show narrow wide texture grid dither motion garden marginalia plant flowers margin backdrop background scene sea underwater ocean sky space stars moon" aria-selected="false" tabindex="-1">Appearance</button>
+                <button class="danger-category" id="settings-tab-reset" type="button" role="tab" aria-controls="settings-reset" data-settings-page="reset" data-settings-keywords="restart clear state reset blank restore recovery backup zero" aria-selected="false" tabindex="-1">Reset</button>
+              </nav>
+            </aside>
+            <div class="settings-pages">
+          <section class="settings-page" id="settings-connection" role="tabpanel" aria-labelledby="settings-tab-connection" data-settings-page-panel="connection">
+          <div id="model-section" hidden>
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Model</p>
+                <h2>Which model answers</h2>
+              </div>
+            </div>
+            <div class="settings-form">
+              <label><span>Service</span><strong class="model-current" id="provider-service">—</strong></label>
+              <label><span>Access</span><strong class="model-current" id="provider-access">—</strong></label>
+              <label><span>Model</span><strong class="model-current" id="model-current">—</strong></label>
+              <div class="settings-actions">
+                <span id="model-status"></span>
+                <button class="send-button settings-apply" id="model-browse" type="button"><span>Browse models</span><span aria-hidden="true">→</span></button>
+              </div>
+            </div>
+            <p class="settings-note provider-help" id="provider-help"></p>
+            <form class="settings-form compact-form model-effort-form" id="model-effort-form" hidden>
+              <label><span>Reasoning effort</span><select id="model-effort"><option value="">Provider default</option></select></label>
+              <p class="settings-note" id="model-effort-note">Choose how much supported reasoning models think before answering.</p>
+              <div class="settings-actions"><span id="model-effort-status" role="status" aria-live="polite"></span><button class="send-button settings-apply" id="model-effort-apply" type="submit"><span>Apply effort</span><span aria-hidden="true">→</span></button></div>
+            </form>
+            <form class="settings-form compact-form connection-form" id="connection-form" hidden>
+              <label><span>Service</span><select id="connection-service"><option value="openai-compatible">OpenAI-compatible service</option><option value="chatgpt-subscription">ChatGPT subscription through Codex</option></select></label>
+              <label id="connection-endpoint-row"><span>Service URL</span><input id="connection-endpoint" type="url" maxlength="2048" spellcheck="false" autocomplete="url" placeholder="https://openrouter.ai/api/v1"></label>
+              <label><span>Default model</span><input id="connection-model" maxlength="200" spellcheck="false" autocomplete="off" required></label>
+              <label id="connection-key-row"><span>API key</span><input id="connection-api-key" type="password" maxlength="4096" spellcheck="false" autocomplete="new-password" placeholder="Leave blank to keep the current key"></label>
+              <p class="settings-note" id="connection-key-note">A key entered here is saved in the supervisor secret store, outside every agent home. It is never returned to this page.</p>
+              <div class="settings-actions"><span id="connection-status"></span><button class="send-button settings-apply" id="connection-save" type="submit"><span>Save &amp; restart</span><span aria-hidden="true">→</span></button></div>
+            </form>
+            <div class="connection-secret-actions" id="connection-secret-actions" hidden>
+              <button class="secondary-button" id="connection-forget-key" type="button">Forget saved API key</button>
+              <span>Environment keys are not changed here.</span>
+            </div>
+            <p class="settings-note" id="connection-manage-note"></p>
+          </div>
+          </section>
+          <section class="settings-page" id="settings-bridges" role="tabpanel" aria-labelledby="settings-tab-bridges" data-settings-page-panel="bridges" hidden>
+            <details class="delivery-recovery" id="delivery-recovery" hidden>
+              <summary id="delivery-recovery-summary">Delivery recovery · 0</summary>
+              <div class="delivery-recovery-body">
+                <p class="settings-note">Interrupted bridge replies stay here until you mark what is known. Fieldwork never resends them automatically.</p>
+                <p class="settings-note" id="delivery-recovery-range" hidden></p>
+                <div class="delivery-recovery-list" id="delivery-recovery-list"></div>
+              </div>
+            </details>
+            <p class="settings-status delivery-recovery-status" id="delivery-recovery-status" role="status" aria-live="polite" aria-atomic="true"></p>
+            <div class="section-heading compact"><div><p class="eyebrow">Telegram</p><h2>A narrow door into this agent</h2></div></div>
+            <p class="settings-note" id="telegram-bridge-intro">Only one chat and one person can reach your agent through this bot. In a direct chat it answers every text message; in a group, only when the bot is mentioned. Messages sent before you connect are skipped.</p>
+            <form class="settings-form compact-form" id="telegram-bridge-form">
+              <label><span>Destination</span><select id="telegram-bridge-scope"><option value="direct">Direct chat</option><option value="group">Group chat</option></select></label>
+              <label><span>Chat ID</span><input id="telegram-bridge-chat-id" maxlength="32" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="123456789 or -100…" required></label>
+              <label><span>Allowed user ID</span><input id="telegram-bridge-user-id" maxlength="32" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="123456789" required></label>
+              <label><span>Bot token</span><input id="telegram-bridge-token" type="password" maxlength="4096" autocomplete="new-password" spellcheck="false" placeholder="Leave blank to keep the saved token"></label>
+              <label id="telegram-bridge-group-row" hidden><span>Group listening</span><input id="telegram-bridge-group-confirmation" maxlength="21" autocomplete="off" spellcheck="false" placeholder="ALLOW GROUP LISTENING"></label>
+              <div class="settings-actions"><span id="telegram-bridge-status">Not configured</span><button class="send-button settings-apply" type="submit"><span>Save &amp; restart</span><span aria-hidden="true">→</span></button></div>
+            </form>
+            <div class="connection-secret-actions bridge-secret-actions">
+              <button class="secondary-button" id="telegram-bridge-refresh" type="button">Refresh status</button>
+              <button class="secondary-button" id="telegram-bridge-disconnect" type="button" hidden>Disconnect route</button>
+              <button class="secondary-button" id="telegram-bridge-forget-token" type="button" hidden>Forget saved bot token</button>
+              <span id="telegram-bridge-detail">The token is write-only and lives in the supervisor secret store.</span>
+            </div>
+            <p class="settings-note">Fieldwork does not delete an existing webhook or claim old messages. If this bot already uses a webhook elsewhere, the bridge pauses and leaves that configuration untouched.</p>
+            <hr class="settings-divider">
+            <div class="section-heading compact"><div><p class="eyebrow">Discord</p><h2>One channel, one person</h2></div></div>
+            <p class="settings-note" id="discord-bridge-intro">In direct messages it answers every text message; in a server channel, only when the allowed person @-mentions the bot. First turn on the bot's Message Content intent in Discord's Developer Portal.</p>
+            <form class="settings-form compact-form" id="discord-bridge-form">
+              <label><span>Destination</span><select id="discord-bridge-scope"><option value="direct">Direct message</option><option value="guild">Server channel</option></select></label>
+              <label><span>Channel ID</span><input id="discord-bridge-channel-id" maxlength="32" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="123456789012345678" required></label>
+              <label id="discord-bridge-guild-row" hidden><span>Server ID</span><input id="discord-bridge-guild-id" maxlength="32" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="123456789012345678"></label>
+              <label><span>Allowed user ID</span><input id="discord-bridge-user-id" maxlength="32" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="123456789012345678" required></label>
+              <label><span>Bot token</span><input id="discord-bridge-token" type="password" maxlength="4096" autocomplete="new-password" spellcheck="false" placeholder="Leave blank to keep the saved token"></label>
+              <label id="discord-bridge-group-row" hidden><span>Server listening</span><input id="discord-bridge-group-confirmation" maxlength="21" autocomplete="off" spellcheck="false" placeholder="ALLOW GROUP LISTENING"></label>
+              <div class="settings-actions"><span id="discord-bridge-status">Not configured</span><button class="send-button settings-apply" type="submit"><span>Save &amp; restart</span><span aria-hidden="true">→</span></button></div>
+            </form>
+            <div class="connection-secret-actions bridge-secret-actions">
+              <button class="secondary-button" id="discord-bridge-refresh" type="button">Refresh status</button>
+              <button class="secondary-button" id="discord-bridge-disconnect" type="button" hidden>Disconnect route</button>
+              <button class="secondary-button" id="discord-bridge-forget-token" type="button" hidden>Forget saved bot token</button>
+              <span id="discord-bridge-detail">The token is write-only and lives in the supervisor secret store.</span>
+            </div>
+            <p class="settings-note">Fieldwork uses Gateway events only while this room is running and never reads channel history. Messages sent while it is stopped are not replayed later.</p>
+          </section>
+          <section class="settings-page" id="settings-agents" role="tabpanel" aria-labelledby="settings-tab-agents" data-settings-page-panel="agents" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Agents</p><h2>Homes and handoffs</h2></div></div>
+            <div class="agent-list" id="agent-list"></div>
+            <form class="settings-form compact-form" id="agent-create-form">
+              <label><span>New agent name</span><input id="agent-create-name" maxlength="80" autocomplete="off" required></label>
+              <div class="settings-actions"><span>A blank, separate home</span><button class="send-button settings-apply" type="submit">Create &amp; switch</button></div>
+            </form>
+            <div class="settings-actions">
+              <span>Optional help agent · packaged docs · no extra permissions</span>
+              <button class="secondary-button" id="agent-create-expert" type="button">Open Fieldwork Expert</button>
+            </div>
+            <form class="settings-form compact-form" id="agent-rename-form">
+              <label><span>Active name</span><input id="agent-rename-name" maxlength="80" autocomplete="off" required></label>
+              <div class="settings-actions"><span>Registry label only</span><button class="secondary-button" type="submit">Rename</button></div>
+            </form>
+            <form class="settings-form compact-form" id="agent-move-form">
+              <label><span>Move active home to</span><input id="agent-move-destination" maxlength="2048" autocomplete="off" spellcheck="false" required></label>
+              <div class="settings-actions"><span>Absolute or home-relative path; moves roots, state, and workspace together</span><button class="secondary-button" type="submit">Move directory</button></div>
+            </form>
+            <details class="appearance-section" id="agent-portable-copy">
+              <summary>Portable copy</summary>
+              <form class="settings-form compact-form" id="agent-export-form">
+                <label><span>Export active agent to</span><input id="agent-export-destination" maxlength="2048" autocomplete="off" spellcheck="false" required></label>
+                <div class="settings-actions"><span>New absolute or home-relative folder</span><button class="secondary-button" type="submit">Export copy</button></div>
+              </form>
+              <form class="settings-form compact-form" id="agent-import-form">
+                <label><span>Import copy from</span><input id="agent-import-source" maxlength="2048" autocomplete="off" spellcheck="false" required></label>
+                <div class="settings-actions"><span>Absolute or home-relative folder</span><button class="secondary-button" type="submit">Import agent</button></div>
+              </form>
+              <p class="settings-note">Fieldwork credentials, live bridge routes, and recovery copies stay behind. Inspect before sharing; import only a copy you trust. An imported agent remains dormant until you switch to it.</p>
+            </details>
+            <div class="settings-status" id="agent-status" role="status">Agent changes restart the room cleanly.</div>
+          </section>
+          <section class="settings-page" id="settings-identity" role="tabpanel" aria-labelledby="settings-tab-identity" data-settings-page-panel="identity" hidden>
+          <div id="look-section" hidden>
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Names, icons and pronouns</p>
+                <h2>You and your agent</h2>
+              </div>
+            </div>
+            <div class="look-grid" id="look-grid"></div>
+          </div>
+          </section>
+          <section class="settings-page" id="settings-guides" role="tabpanel" aria-labelledby="settings-tab-guides" data-settings-page-panel="guides" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Self-authored room</p><h2>Guides in your agent's own voice</h2></div></div>
+            <p class="settings-note">Choose guides, then ask your agent to rewrite them in its own voice. Fieldwork shows the exact original and records who saved the replacement. Rewriting prose never enables a tool, bridge, account, or permission.</p>
+            <form id="guide-rewrite-form">
+              <div class="guide-list" id="guide-list"></div>
+              <div class="settings-actions"><span id="guide-status" role="status"></span><button class="send-button settings-apply" id="guide-rewrite" type="submit"><span>Ask agent to rewrite selected</span><span aria-hidden="true">→</span></button></div>
+            </form>
+          </section>
+          <section class="settings-page" id="settings-expression" role="tabpanel" aria-labelledby="settings-tab-expression" data-settings-page-panel="expression" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Moods</p><h2>How your agent feels</h2></div></div>
+            <p class="settings-note" id="mood-current">No mood yet.</p>
+            <div class="expression-list" id="mood-list"></div>
+            <form class="settings-form compact-form" id="mood-form">
+              <label><span>Mood</span><input id="mood-name" maxlength="32" placeholder="curious" autocomplete="off" required></label>
+              <label><span>Means</span><input id="mood-description" maxlength="200" placeholder="interested and wanting to know more" autocomplete="off"></label>
+              <label><span>Emoji</span><input id="mood-icon" maxlength="8" placeholder="🤔" autocomplete="off"></label>
+              <label><span>Colour</span><select id="mood-color"><option value="lime">Lime</option><option value="leaf">Leaf</option><option value="teal">Teal</option><option value="sky">Sky</option><option value="blue">Blue</option><option value="lavender">Lavender</option><option value="pink">Pink</option><option value="coral">Coral</option><option value="gold">Gold</option><option value="sage">Sage</option></select></label>
+              <div class="settings-actions">
+                <button class="secondary-button" id="mood-starter" type="button">Add a starter set</button>
+                <button class="send-button settings-apply" type="submit"><span>Add mood</span><span aria-hidden="true">+</span></button>
+              </div>
+            </form>
+            <p class="settings-note" id="mood-status" role="status"></p>
+
+            <div class="section-heading compact expression-second"><div><p class="eyebrow">Custom emoji</p><h2>Emoji your agent understands</h2></div></div>
+            <div class="expression-list" id="emoji-list"></div>
+            <form class="settings-form compact-form" id="emoji-form">
+              <label><span>Name</span><input id="emoji-name" maxlength="32" placeholder="happy_frog" autocomplete="off" required></label>
+              <label><span>Means</span><input id="emoji-description" maxlength="200" placeholder="a little frog celebrating" autocomplete="off"></label>
+              <label><span>Picture</span><input id="emoji-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></label>
+              <div class="settings-actions">
+                <button class="send-button settings-apply" type="submit"><span>Add emoji</span><span aria-hidden="true">+</span></button>
+              </div>
+            </form>
+            <p class="settings-note" id="emoji-status" role="status"></p>
+
+            <div class="section-heading compact expression-second"><div><p class="eyebrow">While thinking</p><h2>What shows while your agent works</h2></div></div>
+            <p class="settings-note" id="thinking-note">Your agent can choose these.</p>
+            <div class="thinking-preview" id="thinking-preview"></div>
+            <div class="settings-actions"><button class="secondary-button" id="thinking-clear" type="button" hidden>Go back to the default</button></div>
+          </section>
+          <section class="settings-page" id="settings-checkins" role="tabpanel" aria-labelledby="settings-tab-checkins" data-settings-page-panel="checkins" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Check-ins</p><h2>While you're away</h2></div></div>
+            <p class="settings-note" id="checkin-intro">Check-ins let your agent write to you independently. The agent may also choose silence, in which case nothing is sent.</p>
+            <form class="settings-form compact-form" id="checkin-form">
+              <label class="checkbox-row"><span>Check-ins</span><span><input type="checkbox" id="checkin-enabled"> <span id="checkin-enabled-label">Let your agent check in</span></span></label>
+              <label><span>How often</span><select id="checkin-every"><option value="1">every hour</option><option value="2">every 2 hours</option><option value="3">every 3 hours</option><option value="4">every 4 hours</option><option value="6">every 6 hours</option><option value="8">every 8 hours</option><option value="12">every 12 hours</option><option value="24">every 24 hours (once a day)</option></select></label>
+              <label><span>Send to</span><select id="checkin-destination"><option value="room">This room</option><option value="telegram">Telegram</option><option value="discord">Discord</option></select></label>
+              <p class="settings-note" id="checkin-destination-note" hidden></p>
+              <label class="checkbox-row"><span>Quiet hours</span><span><input type="checkbox" id="checkin-quiet"> never between <input type="time" id="checkin-quiet-from" class="time-input"> and <input type="time" id="checkin-quiet-to" class="time-input"></span></label>
+              <label class="checkbox-row"><span>Daily postcard</span><span><input type="checkbox" id="checkin-postcard"> a short postcard each day at <input type="time" id="checkin-postcard-at" class="time-input"></span></label>
+              <label class="checkbox-row"><span>Fieldworks</span><span><input type="checkbox" id="checkin-fieldworks"> <span id="checkin-fieldwork-copy">the agent may start a Fieldwork independently while checking in</span></span></label>
+              <div class="settings-actions">
+                <button class="secondary-button" id="checkin-now" type="button">Check in now</button>
+                <button class="secondary-button" id="checkin-free-time-now" type="button">Free time now</button>
+                <button class="secondary-button" id="checkin-postcard-now" type="button">Postcard now</button>
+                <button class="send-button settings-apply" type="submit"><span>Save</span><span aria-hidden="true">✓</span></button>
+              </div>
+            </form>
+            <p class="settings-note" id="checkin-conversation-policy" hidden></p>
+            <p class="settings-note" id="checkin-own-rest" hidden></p>
+            <p class="settings-note" id="checkin-claim" hidden></p>
+            <p class="settings-note" id="checkin-status" role="status"></p>
+            <div class="section-heading compact"><div><p class="eyebrow">Recently</p><h2>What happened</h2></div></div>
+            <div class="checkin-history" id="checkin-history"></div>
+          </section>
+          <section class="settings-page" id="settings-heartbeats" role="tabpanel" aria-labelledby="settings-tab-heartbeats" data-settings-page-panel="heartbeats" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Task heartbeats</p><h2>Check on one task regularly</h2></div></div>
+            <p class="settings-note">A heartbeat has your agent check on one task on a schedule, using only the tools you tick. Each check ends as <strong>no change</strong>, <strong>changed</strong>, or <strong>finished</strong>. Checks with no change stay quiet, so you only hear real news. The first check comes one full interval after you create it.</p>
+            <form class="settings-form compact-form heartbeat-form" id="heartbeat-form">
+              <label><span>Name</span><input id="heartbeat-name" maxlength="80" autocomplete="off" placeholder="Watch the build" required></label>
+              <label><span>Every</span><select id="heartbeat-cadence"><option value="1">1 hour</option><option value="2">2 hours</option><option value="3">3 hours</option><option value="4" selected>4 hours</option><option value="6">6 hours</option><option value="8">8 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select></label>
+              <label><span>Linked goal or promise</span><select id="heartbeat-binding-record"><option value="">Standalone task</option></select></label>
+              <label id="heartbeat-binding-measure-row" hidden><span>Exact measure</span><select id="heartbeat-binding-measure"></select></label>
+              <label class="heartbeat-long"><span>Task</span><textarea id="heartbeat-task" maxlength="4000" rows="4" placeholder="What should the agent inspect or continue?" required></textarea></label>
+              <label class="heartbeat-long"><span>Meaningful change</span><textarea id="heartbeat-change" maxlength="2000" rows="3" placeholder="What is worth telling you about?" required></textarea></label>
+              <label class="heartbeat-long"><span>Finished when</span><textarea id="heartbeat-completion" maxlength="2000" rows="3" placeholder="What ends this heartbeat?" required></textarea></label>
+              <fieldset class="heartbeat-tools"><legend>Tools it may use</legend><p>Only the tools you tick are offered, plus one for reporting the result. If you link a goal's measure, its tools are locked to that goal and measure, so the agent can't point them anywhere else.</p><div id="heartbeat-tool-list"></div></fieldset>
+              <div class="settings-actions">
+                <span id="heartbeat-form-mode">New heartbeat</span>
+                <button class="secondary-button" id="heartbeat-cancel" type="button" hidden>Cancel edit</button>
+                <button class="send-button settings-apply" id="heartbeat-save" type="submit"><span>Create</span><span aria-hidden="true">+</span></button>
+              </div>
+            </form>
+            <p class="settings-note" id="heartbeat-status" role="status"></p>
+            <div class="heartbeat-toolbar"><button class="secondary-button" id="heartbeat-export" type="button">Export definitions &amp; history</button></div>
+            <div class="section-heading compact"><div><p class="eyebrow">Heartbeats</p><h2>What each one watches, and what it found</h2></div></div>
+            <div class="heartbeat-list" id="heartbeat-list"></div>
+          </section>
+          <section class="settings-page" id="settings-goals" role="tabpanel" aria-labelledby="settings-tab-goals" data-settings-page-panel="goals" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Goals &amp; promises</p><h2>What your agent is working toward</h2></div></div>
+            <p class="settings-note">A <strong>goal</strong> says what success looks like and when to look again. A <strong>promise</strong> also says who it was made to and when it is due. Everyday reminders and maybes stay in Memory: nothing here becomes an obligation unless someone writes it down here.</p>
+            <form class="settings-form compact-form goal-form" id="goal-form">
+              <label><span>Kind</span><select id="goal-kind"><option value="goal">Long-term goal</option><option value="promise">Explicit promise</option></select></label>
+              <label><span>Chosen by</span><select id="goal-chosen-by"><option value="agent">Agent</option><option value="person">Person</option></select></label>
+              <label><span>Name</span><input id="goal-name" maxlength="100" autocomplete="off" placeholder="Study continuity cues" required></label>
+              <label class="goal-long"><span>What was chosen or promised</span><textarea id="goal-statement" maxlength="4000" rows="4" placeholder="In the words it was actually chosen or promised" required></textarea></label>
+              <label class="goal-long"><span>Where it came from</span><textarea id="goal-source" maxlength="2000" rows="3" placeholder="Paste the message, or name the file or note it came from" required></textarea></label>
+              <div class="goal-kind-fields goal-goal-fields" id="goal-goal-fields">
+                <label><span>Success signals</span><textarea id="goal-success-signals" maxlength="2000" rows="3" placeholder="What evidence would count as progress or success?"></textarea></label>
+                <label><span>Review at</span><input id="goal-review-at" type="datetime-local"></label>
+              </div>
+              <div class="goal-kind-fields goal-promise-fields" id="goal-promise-fields" hidden>
+                <label><span>Beneficiary</span><input id="goal-beneficiary" maxlength="200" autocomplete="off" placeholder="Who was promised this?"></label>
+                <label><span>Return from</span><input id="goal-return-from" type="datetime-local"></label>
+                <label><span>Return by</span><input id="goal-return-by" type="datetime-local"></label>
+              </div>
+              <fieldset class="goal-measures"><legend>Measures (optional)</legend><p>Name where each number comes from before collecting it. Each check can record a value, say nothing changed, or say there was no data to read.</p><div id="goal-measure-list"></div><button class="secondary-button" id="goal-add-measure" type="button">Add measure</button></fieldset>
+              <div class="settings-actions">
+                <span id="goal-form-mode">New goal or promise</span>
+                <button class="secondary-button" id="goal-cancel" type="button" hidden>Cancel edit</button>
+                <button class="send-button settings-apply" id="goal-save" type="submit"><span>Create</span><span aria-hidden="true">+</span></button>
+              </div>
+            </form>
+            <p class="settings-note" id="goal-status" role="status"></p>
+            <div class="goal-toolbar"><button class="secondary-button" id="goal-export" type="button">Export goals, promises &amp; history</button></div>
+            <p class="settings-note">To check a measure automatically, link a Task heartbeat to it. Each check still reports its result, and “no change” is a fine answer.</p>
+            <div class="section-heading compact"><div><p class="eyebrow">Register</p><h2>Goals, promises, and their history</h2></div></div>
+            <div class="goal-list" id="goal-list"></div>
+          </section>
+          <section class="settings-page" id="settings-outside-reader" role="tabpanel" aria-labelledby="settings-tab-outside-reader" data-settings-page-panel="outside-reader" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Outside reader</p><h2>A second opinion, now and then</h2></div></div>
+            <p class="settings-note">On a schedule, a fresh copy of the model that doesn't know your agent reads the goals and promises you pick, and points out anything that looks stuck, contradictory, or unsupported. It can't change anything.</p>
+            <details class="outside-reader-boundaries"><summary>What it can and can't see</summary><ul><li>It reads only the goals and promises you pick. New ones are not added on their own.</li><li>It runs on the current model without your agent's files, the chat, or the room's tools, and it can't edit what it reads.</li><li>What it points out are leads to check, not proof. If something is too long to read whole, the review stops instead of reading only part of it.</li></ul></details>
+            <form class="settings-form compact-form outside-reader-form" id="outside-reader-form">
+              <label><span>Name</span><input id="outside-reader-name" maxlength="80" autocomplete="off" placeholder="Promise consistency review" required></label>
+              <label><span>Every</span><select id="outside-reader-cadence"></select></label>
+              <label class="outside-reader-long"><span>Look for</span><textarea id="outside-reader-focus" maxlength="4000" rows="3" placeholder="Contradictions, broken promises, unsupported claims" required></textarea></label>
+              <fieldset class="outside-reader-sources"><legend>Sources (1–24)</legend><div id="outside-reader-source-list"></div></fieldset>
+              <div class="settings-actions">
+                <span id="outside-reader-form-mode">New review schedule</span>
+                <button class="secondary-button" id="outside-reader-cancel" type="button" hidden>Cancel edit</button>
+                <button class="send-button settings-apply" id="outside-reader-save" type="submit"><span>Create</span><span aria-hidden="true">+</span></button>
+              </div>
+            </form>
+            <p class="settings-note" id="outside-reader-status" role="status"></p>
+            <div class="outside-reader-toolbar"><button class="secondary-button" id="outside-reader-export" type="button">Export JSON</button></div>
+            <div class="outside-reader-list" id="outside-reader-list"></div>
+          </section>
+          <section class="settings-page" id="settings-notes" role="tabpanel" aria-labelledby="settings-tab-notes" data-settings-page-panel="notes" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">From your agent</p><h2>Notes about the room</h2></div></div>
+            <p class="settings-note" id="notes-intro"></p>
+            <div class="builder-note-list" id="builder-note-list"></div>
+            <p class="settings-note" id="notes-status" role="status"></p>
+          </section>
+          <section class="settings-page" id="settings-tools" role="tabpanel" aria-labelledby="settings-tab-tools" data-settings-page-panel="tools" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Tools</p><h2>What your agent can reach for</h2></div></div>
+            <p class="settings-note" id="tools-summary"></p>
+            <details class="tool-effect-recovery" id="tool-effect-recovery" hidden>
+              <summary><span id="tool-effect-recovery-summary">Needs review</span><span id="tool-effect-recovery-count"></span></summary>
+              <div class="tool-effect-recovery-body">
+                <p class="settings-note">Fieldwork won’t repeat these actions automatically.</p>
+                <p class="settings-note" id="tool-effect-recovery-settling" hidden></p>
+                <div class="tool-effect-recovery-list" id="tool-effect-recovery-list"></div>
+                <details class="tool-effect-recovery-history" id="tool-effect-recovery-history" hidden>
+                  <summary id="tool-effect-recovery-history-summary">Resolved</summary>
+                  <div id="tool-effect-recovery-history-list"></div>
+                </details>
+              </div>
+            </details>
+            <section class="tool-permission-pending" id="tool-permission-pending" aria-labelledby="tool-permission-pending-title" hidden>
+              <div class="tool-permission-heading"><h3 id="tool-permission-pending-title">Waiting for you</h3><span id="tool-permission-pending-count"></span></div>
+              <p>A choice does not resume the call. Ask your agent to retry afterward.</p>
+              <div class="tool-permission-pending-list" id="tool-permission-pending-list"></div>
+            </section>
+            <div class="tool-group-list" id="tool-group-list"></div>
+            <details class="tool-permission-history" id="tool-permission-history" hidden>
+              <summary id="tool-permission-history-summary">Permission history</summary>
+              <div id="tool-permission-grants"></div>
+              <div class="tool-permission-history-list" id="tool-permission-history-list"></div>
+            </details>
+            <p class="settings-note" id="tools-status" role="status"></p>
+          </section>
+          <section class="settings-page" id="settings-changes" role="tabpanel" aria-labelledby="settings-tab-changes" data-settings-page-panel="changes" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">State &amp; history</p><h2>What changed, and who changed it</h2></div></div>
+            <p class="settings-note" id="changes-intro">Search what the room holds now and what changed before, open any value to see it exactly, and undo supported changes. Every undo is logged too. Memories keep their own tamper-evident history under Memory.</p>
+            <div class="changes-navigation">
+              <button class="secondary-button" id="changes-open-memory" type="button">Open memory history</button>
+              <button class="secondary-button" id="changes-open-collections" type="button" hidden>Open collection history</button>
+            </div>
+            <div class="changes-search">
+              <label for="changes-query"><span>Find state or history</span><input id="changes-query" type="search" maxlength="200" autocomplete="off" placeholder="Try pronouns, appearance, shelf…"></label>
+              <label for="changes-area"><span>Kind</span><select id="changes-area"><option value="">All kinds</option></select></label>
+            </div>
+            <div class="section-heading compact"><div><p class="eyebrow">Now</p><h2>As it is now</h2></div></div>
+            <div class="changes-now" id="changes-now"></div>
+            <div class="section-heading compact"><div><p class="eyebrow">History</p><h2>What changed</h2></div></div>
+            <div class="changes-tools">
+              <div class="changes-filter" role="group" aria-label="Whose changes">
+                <button type="button" data-changes-by="" aria-pressed="true">Everyone</button>
+                <button type="button" data-changes-by="agent" aria-pressed="false" id="changes-filter-agent">Your agent</button>
+                <button type="button" data-changes-by="person" aria-pressed="false">You</button>
+              </div>
+              <button class="secondary-button" id="changes-export" type="button">Export the log</button>
+            </div>
+            <p class="settings-note" id="changes-status" role="status" tabindex="-1"></p>
+            <section class="changes-detail" id="changes-detail" aria-labelledby="changes-detail-title" hidden>
+              <div class="changes-detail-heading">
+                <div><p class="eyebrow">Inspect</p><h3 id="changes-detail-title">Exact value</h3></div>
+                <div class="changes-detail-actions">
+                  <button class="secondary-button" id="changes-detail-open" type="button" hidden>Open setting</button>
+                  <button class="changes-detail-close" id="changes-detail-close" type="button" aria-label="Close exact value">×</button>
+                </div>
+              </div>
+              <p class="settings-note" id="changes-detail-meta"></p>
+              <h4>As it is now</h4>
+              <pre class="changes-exact" id="changes-detail-current" tabindex="0" role="region" aria-label="Current exact value"></pre>
+              <h4>Retained history</h4>
+              <div class="changes-detail-history" id="changes-detail-history"></div>
+            </section>
+            <div class="changes-list" id="changes-list"></div>
+          </section>
+          <section class="settings-page" id="settings-appearance" role="tabpanel" aria-labelledby="settings-tab-appearance" data-settings-page-panel="appearance" hidden>
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Appearance</p>
+              <h2>Room controls</h2>
+            </div>
+          </div>
+          <form class="settings-form" id="appearance-form">
+            <details class="appearance-section" open>
+              <summary>Text &amp; reading</summary>
+              <div class="appearance-controls">
+                <label class="typeface-control"><span>Display font</span><select name="typeface">
+                  <optgroup label="Reading">
+                    <option value="serif">Classic serif</option>
+                    <option value="sans">Atkinson Hyperlegible Next</option>
+                    <option value="lexend">Lexend</option>
+                    <option value="comic-neue">Comic Neue</option>
+                    <option value="shantell">Shantell Sans</option>
+                  </optgroup>
+                  <optgroup label="Monospace &amp; pixel">
+                    <option value="mono">Atkinson Hyperlegible Mono</option>
+                    <option value="system-mono">System monospace</option>
+                    <option value="cozette">Cozette</option>
+                  </optgroup>
+                  <optgroup label="System">
+                    <option value="system-sans">System sans serif</option>
+                  </optgroup>
+                </select><output class="typeface-preview" id="typeface-preview" aria-hidden="true">Il1 O0 — Field notes in morning light. ☆</output></label>
+                <label class="typeface-control"><span>Interface font</span><select name="interfaceTypeface">
+                  <optgroup label="Reading">
+                    <option value="serif">Classic serif</option>
+                    <option value="sans">Atkinson Hyperlegible Next</option>
+                    <option value="lexend">Lexend</option>
+                    <option value="comic-neue">Comic Neue</option>
+                    <option value="shantell">Shantell Sans</option>
+                  </optgroup>
+                  <optgroup label="Monospace &amp; pixel">
+                    <option value="mono">Atkinson Hyperlegible Mono</option>
+                    <option value="system-mono">System monospace</option>
+                    <option value="cozette">Cozette</option>
+                  </optgroup>
+                  <optgroup label="System">
+                    <option value="system-sans">System sans serif</option>
+                  </optgroup>
+                </select><output class="typeface-preview" id="interface-typeface-preview" aria-hidden="true">HEALTH · MEMORY · RECEIPTS</output></label>
+                <label class="typeface-control"><span>Technical font</span><select name="technicalTypeface">
+                  <optgroup label="Reading">
+                    <option value="serif">Classic serif</option>
+                    <option value="sans">Atkinson Hyperlegible Next</option>
+                    <option value="lexend">Lexend</option>
+                    <option value="comic-neue">Comic Neue</option>
+                    <option value="shantell">Shantell Sans</option>
+                  </optgroup>
+                  <optgroup label="Monospace &amp; pixel">
+                    <option value="mono">Atkinson Hyperlegible Mono</option>
+                    <option value="system-mono">System monospace</option>
+                    <option value="cozette">Cozette</option>
+                  </optgroup>
+                  <optgroup label="System">
+                    <option value="system-sans">System sans serif</option>
+                  </optgroup>
+                </select><output class="typeface-preview" id="technical-typeface-preview" aria-hidden="true">tool.run() · 01:23 · Il1/O0</output></label>
+                <label><span>Text size</span><select name="textSize">
+                  <option value="extra-small">Extra small · 81.25%</option>
+                  <option value="small">Small · 87.5%</option>
+                  <option value="standard">Standard · 100%</option>
+                  <option value="large">Large · 112.5%</option>
+                  <option value="extra-large">Extra large · 125%</option>
+                </select></label>
+                <label><span>Line spacing</span><select name="lineSpacing">
+                  <option value="tight">Tight</option>
+                  <option value="standard">Standard</option>
+                  <option value="airy">Airy</option>
+                </select></label>
+                <label><span>Message width</span><select name="readingWidth">
+                  <option value="narrow">Narrow</option>
+                  <option value="standard">Standard</option>
+                  <option value="wide">Wide</option>
+                  <option value="full">Full width</option>
+                </select></label>
+                <label><span>Message flow</span><select name="messageLayout">
+                  <option value="alternating">Alternating sides</option>
+                  <option value="stacked">One column</option>
+                </select></label>
+                <label><span>Message portraits</span><select name="avatars">
+                  <option value="shown">Show</option>
+                  <option value="hidden">Hide</option>
+                </select></label>
+              </div>
+            </details>
+            <details class="appearance-section">
+              <summary>Layout</summary>
+              <div class="appearance-controls">
+                <label><span>Panel order</span><select name="panelOrder">
+                  <option value="navigator-conversation-inspector">Navigator · Conversation · Inspector</option>
+                  <option value="navigator-inspector-conversation">Navigator · Inspector · Conversation</option>
+                  <option value="conversation-navigator-inspector">Conversation · Navigator · Inspector</option>
+                  <option value="conversation-inspector-navigator">Conversation · Inspector · Navigator</option>
+                  <option value="inspector-navigator-conversation">Inspector · Navigator · Conversation</option>
+                  <option value="inspector-conversation-navigator">Inspector · Conversation · Navigator</option>
+                </select></label>
+                <label><span>Navigator</span><select name="sidebarVisibility">
+                  <option value="shown">Show</option>
+                  <option value="hidden">Hide</option>
+                </select></label>
+                <label><span>Navigator width</span><select name="sidebarWidth">
+                  <option value="narrow">Narrow</option>
+                  <option value="standard">Standard</option>
+                  <option value="wide">Wide</option>
+                </select></label>
+                <label><span>Inspector</span><select name="inspectorVisibility">
+                  <option value="shown">Show</option>
+                  <option value="hidden">Hide</option>
+                </select></label>
+                <label><span>Inspector width</span><select name="inspector">
+                  <option value="narrow">Narrow</option>
+                  <option value="standard">Standard</option>
+                  <option value="wide">Wide</option>
+                </select></label>
+              </div>
+              <p class="settings-note">The top bar and Settings stay available. Open Settings to restore a hidden panel.</p>
+            </details>
+            <details class="appearance-section">
+              <summary>Surface &amp; motion</summary>
+              <div class="appearance-controls">
+                <label><span>Palette</span><select name="palette">
+                  <option value="fieldwork">Fieldwork</option>
+                  <option value="amber">Amber terminal</option>
+                  <option value="cyanotype">Cyanotype</option>
+                  <option value="monochrome">Monochrome</option>
+                  <option value="madoromi-haru-yoru">Madoromi · spring night (haru-yoru)</option>
+                  <option value="madoromi-natsu-yoru">Madoromi · summer night (natsu-yoru)</option>
+                  <option value="madoromi-aki-yoru">Madoromi · autumn night (aki-yoru)</option>
+                  <option value="madoromi-fuyu-yoru">Madoromi · winter night (fuyu-yoru)</option>
+                </select></label>
+                <label><span>Density</span><select name="density">
+                  <option value="dense">Compact</option>
+                  <option value="relaxed">Comfortable</option>
+                </select></label>
+                <label><span>Workbench texture</span><select name="texture">
+                  <option value="plain">Plain</option>
+                  <option value="grid">Grid</option>
+                  <option value="dither">Dither</option>
+                </select></label>
+                <label><span>Motion</span><select name="motion">
+                  <option value="system">Follow system</option>
+                  <option value="reduced">Reduced</option>
+                </select></label>
+              </div>
+            </details>
+            <fieldset class="appearance-marginalia appearance-backdrop">
+              <legend>Backdrop</legend>
+              <label class="marginalia-switch"><input id="backdrop-enabled" type="checkbox"><span>Show a scene behind the conversation</span></label>
+              <div class="marginalia-controls" id="backdrop-controls" hidden>
+                <label><span>Scene</span><select id="backdrop-scene"></select></label>
+                <details class="appearance-advanced">
+                  <summary>Advanced</summary>
+                  <div class="appearance-advanced-controls">
+                    <label><span>Seed</span><input id="backdrop-seed" type="number" min="0" max="2147483647" step="1" inputmode="numeric"></label>
+                    <label><span>Strength</span><select id="backdrop-strength"></select></label>
+                  </div>
+                </details>
+              </div>
+              <p class="settings-note">Local art moved by the clock, never conversation activity.</p>
+            </fieldset>
+            <fieldset class="appearance-marginalia">
+              <legend>Margin garden</legend>
+              <label class="marginalia-switch"><input id="marginalia-enabled" type="checkbox"><span>Grow a garden in the conversation's margin</span></label>
+              <div class="marginalia-controls" id="marginalia-controls" hidden>
+                <label><span>Plant</span><select id="marginalia-mode"></select></label>
+                <label id="marginalia-form-row"><span>Plant form</span><select id="marginalia-form"></select></label>
+                <details class="appearance-advanced">
+                  <summary>Advanced</summary>
+                  <div class="appearance-advanced-controls">
+                    <label><span>Seed</span><input id="marginalia-seed" type="number" min="0" max="2147483647" step="1" inputmode="numeric"></label>
+                    <label><span>Manner</span><select id="marginalia-manner"></select></label>
+                    <label><span>Ink</span><select id="marginalia-palette"></select></label>
+                    <label><span>Light</span><select id="marginalia-reading"></select></label>
+                    <label><span>Fullness</span><select id="marginalia-fullness-source"></select></label>
+                    <label id="marginalia-fullness-row" hidden><span>How full</span><input id="marginalia-fullness" type="range" min="0" max="1" step="0.01" value="0"><output id="marginalia-fullness-output" for="marginalia-fullness">0.00</output></label>
+                  </div>
+                  <p class="settings-note palette-credit">Drawn locally by <a href="https://github.com/cadaeix/eglantine-marginalia" target="_blank" rel="noopener noreferrer">Églantine Marginalia</a> by cadaeix, MIT.</p>
+                </details>
+              </div>
+              <p class="settings-note">Grows with local time, never message activity.</p>
+              <p class="settings-note" id="marginalia-calendar-note" hidden>The day's plant follows the French Republican calendar. Animal and tool days keep the previous day's plant; those engravings are not bundled.</p>
+            </fieldset>
+            <div class="settings-actions">
+              <span id="appearance-revision">Revision 0</span>
+              <button class="secondary-button" id="appearance-reset" type="button">Reset</button>
+              <button class="send-button settings-apply" type="submit"><span>Apply</span><span aria-hidden="true">→</span></button>
+            </div>
+          </form>
+          <div class="settings-status error" id="appearance-decoration-status" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+          <div class="settings-status" id="appearance-status" role="status">No local appearance changes yet.</div>
+          <p class="settings-note">Browser chat saves these choices in this agent's state folder. A custom host may keep them process-local.</p>
+          <p class="settings-note palette-credit">Seasonal night palettes adapt the published colour tokens from <a href="https://madoromi.moonwit.ch/" target="_blank" rel="noopener noreferrer">madoromi</a> by <a href="https://github.com/the-moonwitch" target="_blank" rel="noopener noreferrer">samhain</a>, licensed <a href="https://github.com/the-moonwitch/madoromi/blob/f8bcc5aa1ec3f731fcba9471be7caa5df1ab5695/LICENSE" target="_blank" rel="noopener noreferrer">MPL-2.0</a>.</p>
+          </section>
+          <section class="settings-page danger-page" id="settings-reset" role="tabpanel" aria-labelledby="settings-tab-reset" data-settings-page-panel="reset" hidden>
+            <div class="section-heading compact"><div><p class="eyebrow">Reset</p><h2>Back to zero, with a way back</h2></div></div>
+            <article class="recovery-panel">
+              <h3>Restore a recovery copy</h3>
+              <p>Choose a copy Fieldwork discovered for this agent. The chosen copy stays untouched, and the version you have now becomes a new recovery copy before anything is replaced.</p>
+              <div class="recovery-list" id="recovery-list" role="list"></div>
+              <div class="restore-preview" id="restore-preview" hidden>
+                <strong id="restore-preview-title"></strong>
+                <p id="restore-preview-description"></p>
+                <code id="restore-preview-location"></code>
+                <label>Type <code id="restore-confirmation-phrase"></code><input id="restore-confirmation" autocomplete="off" spellcheck="false"></label>
+                <button class="secondary-button danger-button" id="restore-button" type="button" disabled>Restore &amp; restart</button>
+              </div>
+            </article>
+            <article class="danger-card">
+              <h3>Clear active agent state</h3>
+              <p>Moves conversations, memories, room preferences, and derived context into a timestamped backup. Roots and workspace files stay.</p>
+              <label>Type <code>CLEAR STATE</code><input id="clear-state-confirmation" autocomplete="off" spellcheck="false"></label>
+              <button class="secondary-button danger-button" id="clear-state-button" type="button" disabled>Clear state &amp; restart</button>
+            </article>
+            <article class="danger-card">
+              <h3>Reset active agent to its starting template</h3>
+              <p>Moves the entire agent home into a recovery backup, then creates a fresh home from its starting template. Ordinary agents return blank; bundled presets return to their preset.</p>
+              <label>Type <code>RESET AGENT</code><input id="reset-agent-confirmation" autocomplete="off" spellcheck="false"></label>
+              <button class="secondary-button danger-button" id="reset-agent-button" type="button" disabled>Reset agent &amp; restart</button>
+            </article>
+            <div class="settings-status" id="reset-status" role="status">Nothing here deletes without making a backup first.</div>
+          </section>
+            </div>
+          </div>
+        </dialog>
+      </aside>
+    </main>
+  </div>
+
+  <div class="tour" id="tour" role="dialog" aria-labelledby="tour-title" aria-modal="false" hidden>
+    <p class="eyebrow" id="tour-step"></p>
+    <h2 id="tour-title"></h2>
+    <p id="tour-text"></p>
+    <div class="tour-actions">
+      <button class="tour-link" id="tour-close" type="button">Close</button>
+      <button class="secondary-button" id="tour-back" type="button">Back</button>
+      <button class="send-button" id="tour-next" type="button"><span>Next</span><span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+
+  <dialog class="mood-picker" id="mood-picker" aria-labelledby="mood-picker-title">
+    <div class="model-dialog-head">
+      <div><p class="eyebrow">Your mood</p><h2 id="mood-picker-title">How are you feeling?</h2></div>
+      <button class="icon-button" id="mood-picker-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="mood-picker-list" id="mood-picker-list"></div>
+  </dialog>
+
+  <dialog class="model-dialog root-dialog" id="root-dialog" aria-labelledby="root-dialog-title">
+    <div class="model-dialog-head">
+      <div>
+        <p class="eyebrow" id="root-dialog-path">Agent file</p>
+        <h2 id="root-dialog-title">identity</h2>
+      </div>
+      <button class="icon-button" id="root-dialog-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <label class="sr-only" for="root-text">File text</label>
+    <textarea class="root-text" id="root-text" spellcheck="true"></textarea>
+    <details class="root-history" id="root-history">
+      <summary>Earlier versions</summary>
+      <ol id="root-history-list"></ol>
+    </details>
+    <div class="root-actions">
+      <span class="model-dialog-status" id="root-status" role="status"></span>
+      <button class="secondary-button" id="root-cancel" type="button">Cancel</button>
+      <button class="send-button" id="root-save" type="button"><span>Save</span><span aria-hidden="true">✓</span></button>
+    </div>
+  </dialog>
+
+  <dialog class="model-dialog" id="model-dialog" aria-labelledby="model-dialog-title">
+    <div class="model-dialog-head">
+      <div>
+        <p class="eyebrow">Model</p>
+        <h2 id="model-dialog-title">Choose a model</h2>
+      </div>
+      <button class="icon-button" id="model-dialog-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="model-dialog-search">
+      <label class="sr-only" for="model-search">Search models</label>
+      <input id="model-search" type="search" placeholder="Search by name or maker…" autocomplete="off">
+      <span id="model-count"></span>
+    </div>
+    <div class="model-list" id="model-list" role="listbox" aria-label="Models"></div>
+    <p class="model-dialog-status" id="model-dialog-status" role="status"></p>
+  </dialog>
+
+  <template id="message-template">
+    <li class="message">
+      <div class="message-meta"><span class="avatar" aria-hidden="true"></span><span class="message-role"></span><time></time></div>
+      <div class="message-content"></div>
+    </li>
+  </template>
+  <template id="instrument-template">
+    <li><span class="instrument-state" aria-hidden="true"></span><div><strong></strong><small></small></div></li>
+  </template>
+  <template id="memory-template">
+    <li class="memory-card">
+      <div class="memory-heading"><span class="type-badge"></span><span class="state-badge"></span></div>
+      <strong class="memory-id"></strong>
+      <p class="memory-text"></p>
+      <dl class="memory-meta"></dl>
+    </li>
+  </template>
+  <template id="receipt-template">
+    <details class="receipt-card">
+      <summary><span></span><time></time></summary>
+      <pre></pre>
+    </details>
+  </template>
+
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>

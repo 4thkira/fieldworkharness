@@ -1,0 +1,20 @@
+{
+  "format": "fieldwork-profile/v1",
+  "roots": [
+    {
+      "id": "identity",
+      "path": "roots/identity.md",
+      "placement": "system"
+    },
+    {
+      "id": "relationships",
+      "path": "roots/relationships.md",
+      "placement": "system"
+    },
+    {
+      "id": "voice",
+      "path": "roots/voice.md",
+      "placement": "user-tail"
+    }
+  ]
+}

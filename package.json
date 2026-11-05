@@ -1,0 +1,53 @@
+{
+  "name": "fieldwork",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "description": "A local-first, profile-driven habitat for persistent AI agents.",
+  "author": {
+    "name": "4thkira",
+    "url": "https://github.com/4thkira"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/4thkira/fieldworkharness.git"
+  },
+  "homepage": "https://github.com/4thkira/fieldworkharness#readme",
+  "bugs": {
+    "url": "https://github.com/4thkira/fieldworkharness/issues"
+  },
+  "type": "module",
+  "files": [
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "RELEASING.md",
+    "SECURITY.md",
+    "npm-shrinkwrap.json",
+    "*.cmd",
+    "browser/",
+    "docs/",
+    "scripts/",
+    "src/",
+    "templates/",
+    "test/",
+    "vendor/"
+  ],
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "browser:demo": "node scripts/browser-demo.mjs",
+    "browser:chat": "node scripts/browser-chat.mjs",
+    "browser:opencode": "node scripts/browser-opencode.mjs",
+    "test": "node --test",
+    "check": "node scripts/check-syntax.mjs && node --test",
+    "release:check": "node scripts/release-check.mjs",
+    "release:prepare-public": "node scripts/prepare-public-repo.mjs",
+    "release:build": "node scripts/build-release.mjs"
+  },
+  "dependencies": {
+    "@opencode/client": "2.2.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

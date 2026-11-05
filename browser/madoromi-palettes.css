@@ -1,0 +1,108 @@
+/*
+ * Madoromi palette adaptations for Fieldwork.
+ * Derived from the published madoromi theme tokens by samhain:
+ * https://github.com/the-moonwitch/madoromi/blob/f8bcc5aa1ec3f731fcba9471be7caa5df1ab5695/palettes/css/madoromi.css
+ * Modification: retains four yoru flavours and maps their tokens onto
+ * Fieldwork's closed semantic colour variables.
+ *
+ * The upstream themes are licensed under MPL-2.0. This derivative file
+ * is available under MPL-2.0 OR GPL-3.0-or-later.
+ * See ../docs/licenses/MPL-2.0.txt, ../LICENSE, and ../docs/third-party.md.
+ * SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
+ */
+
+html[data-palette="madoromi-haru-yoru"] {
+  color-scheme: dark;
+  --void: #241c26;       /* kami */
+  --bench: #1c151f;      /* hyoshi */
+  --bench-2: #160f18;    /* chitsu */
+  --bench-3: #392e3c;    /* nijimi0 */
+  --rule: #756a7a;       /* kasure0 */
+  --rule-hot: #8a7e8f;   /* kasure1 */
+  --cream: #ffc5da;      /* sakura */
+  --paper: #e1d1e7;      /* sumi */
+  --ink: #cdbed3;        /* usuzumi1 */
+  --muted: #b7a8bd;      /* usuzumi0 */
+  --faint: #9f93a4;      /* kasure2 */
+  --acid: #ddb3ff;       /* fuji */
+  --cyan: #88d9eb;       /* sora */
+  --red: #ff8b79;        /* beni */
+  --selection: rgb(97 86 101 / 60%); /* nijimi2 */
+  --selection-ink: #e1d1e7;          /* sumi */
+  --error-surface: #392e3c;          /* nijimi0 */
+  --grid-line: rgb(136 217 235 / 2.5%);
+  --grid-line-soft: rgb(136 217 235 / 1.8%);
+}
+
+html[data-palette="madoromi-natsu-yoru"] {
+  color-scheme: dark;
+  --void: #132227;       /* kami */
+  --bench: #0e1a1f;      /* hyoshi */
+  --bench-2: #091317;    /* chitsu */
+  --bench-3: #23363d;    /* nijimi0 */
+  --rule: #5d737b;       /* kasure0 */
+  --rule-hot: #728790;   /* kasure1 */
+  --cream: #ffbde2;      /* sakura */
+  --paper: #c0dde8;      /* sumi */
+  --ink: #adcad4;        /* usuzumi1 */
+  --muted: #97b3be;      /* usuzumi0 */
+  --faint: #869da5;      /* kasure2 */
+  --acid: #aea8ff;       /* fuji */
+  --cyan: #5cd7f5;       /* sora */
+  --red: #ff8c9f;        /* beni */
+  --selection: rgb(74 95 102 / 60%); /* nijimi2 */
+  --selection-ink: #c0dde8;          /* sumi */
+  --error-surface: #23363d;          /* nijimi0 */
+  --grid-line: rgb(92 215 245 / 2.5%);
+  --grid-line-soft: rgb(92 215 245 / 1.8%);
+}
+
+html[data-palette="madoromi-aki-yoru"] {
+  color-scheme: dark;
+  --void: #271d14;       /* kami */
+  --bench: #20160e;      /* hyoshi */
+  --bench-2: #181008;    /* chitsu */
+  --bench-3: #3d3024;    /* nijimi0 */
+  --rule: #7b6c5e;       /* kasure0 */
+  --rule-hot: #908072;   /* kasure1 */
+  --cream: #ffb6cc;      /* sakura */
+  --paper: #e8d3c1;      /* sumi */
+  --ink: #d4c0ae;        /* usuzumi1 */
+  --muted: #beaa98;      /* usuzumi0 */
+  --faint: #a59587;      /* kasure2 */
+  --acid: #d3a1ff;       /* fuji */
+  --cyan: #5ac6f1;       /* sora */
+  --red: #ff8672;        /* beni */
+  --selection: rgb(102 88 75 / 60%); /* nijimi2 */
+  --selection-ink: #e8d3c1;          /* sumi */
+  --error-surface: #3d3024;          /* nijimi0 */
+  --grid-line: rgb(90 198 241 / 2.5%);
+  --grid-line-soft: rgb(90 198 241 / 1.8%);
+}
+
+html[data-palette="madoromi-fuyu-yoru"] {
+  color-scheme: dark;
+  --void: #1c1e2a;       /* kami */
+  --bench: #151722;      /* hyoshi */
+  --bench-2: #0f111b;    /* chitsu */
+  --bench-3: #2f3241;    /* nijimi0 */
+  --rule: #6a6e7f;       /* kasure0 */
+  --rule-hot: #7e8294;   /* kasure1 */
+  --cream: #ffbee1;      /* sakura */
+  --paper: #d2d6eb;      /* sumi */
+  --ink: #bec3db;        /* usuzumi1 */
+  --muted: #a8adc4;      /* usuzumi0 */
+  --faint: #9397aa;      /* kasure2 */
+  --acid: #bbb8ff;       /* fuji */
+  --cyan: #78d5fc;       /* sora */
+  --red: #ff8799;        /* beni */
+  --selection: rgb(86 90 107 / 60%); /* nijimi2 */
+  --selection-ink: #d2d6eb;          /* sumi */
+  --error-surface: #2f3241;          /* nijimi0 */
+  --grid-line: rgb(120 213 252 / 2.5%);
+  --grid-line-soft: rgb(120 213 252 / 1.8%);
+}
+
+html[data-palette^="madoromi-"] .send-button:disabled {
+  color: var(--muted);
+}

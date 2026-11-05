@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+.tmp/
+*.log
+.env
+.env.*
+!.env.example
+fieldwork.local.json
+*.secrets.json
+*.room-secret
+.fieldwork-dependencies.lock*
